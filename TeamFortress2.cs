@@ -16,6 +16,14 @@ using Oxide.Core;
 using Oxide.Core.Libraries;
 using Oxide.Core.Plugins;
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+
+using JSONObject = JSON.Object;
+using JSONArray = JSON.Array;
+using JSONValue = JSON.Value;
+using JSONValueType = JSON.ValueType;
+
 namespace Oxide.Plugins
 {
 	[Info( "Team Fortress 2", "johnjoemcbob", "0.1", ResourceId = -1 )]
@@ -34,7 +42,55 @@ namespace Oxide.Plugins
 	#endregion
 
 	#region Variables
-		
+        class DynamicContractResolver : DefaultContractResolver
+        {
+            private static bool IsAllowed(JsonProperty property)
+            {
+                return property.PropertyType.IsPrimitive || property.PropertyType == typeof(List<ItemAmount>) ||
+                             property.PropertyType == typeof(ItemAmount[]) ||
+                             property.PropertyType == typeof(List<DamageTypeEntry>) ||
+                             property.PropertyType == typeof(DamageTypeEntry) ||
+                             property.PropertyType == typeof(DamageType) ||
+                             property.PropertyType == typeof(List<ItemModConsumable.ConsumableEffect>) ||
+                             property.PropertyType == typeof(ItemModProjectileRadialDamage) ||
+                             property.PropertyType == typeof(MetabolismAttribute.Type) ||
+                             property.PropertyType == typeof(Rarity) ||
+                             property.PropertyType == typeof(ItemCategory) ||
+                             property.PropertyType == typeof(ItemDefinition) ||
+                             property.PropertyType == typeof(ItemDefinition.Condition) ||
+                             property.PropertyType == typeof(Wearable) ||
+                             property.PropertyType == typeof(Wearable.OccupationSlots) ||
+                             property.PropertyType == typeof(ResourceDispenser.GatherProperties) ||
+                             property.PropertyType == typeof(ResourceDispenser.GatherPropertyEntry) ||
+                             property.PropertyType == typeof(String);
+            }
+
+            protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+            {
+                var properties = base.CreateProperties(type, memberSerialization);
+                return properties.Where(p => (p.DeclaringType == type || p.DeclaringType == typeof(TimedExplosive) || p.DeclaringType == typeof(BaseMelee)) && IsAllowed(p)).ToList();
+            }
+        }
+
+        private static JSONObject ToJsonObject(object obj)
+        {
+            return JSONObject.Parse(ToJsonString(obj));
+        }
+
+        private static JSONArray ToJsonArray(object obj)
+        {
+            return JSONArray.Parse(ToJsonString(obj));
+        }
+
+        private static string ToJsonString(object obj)
+        {
+            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings
+                {
+                    ContractResolver = new DynamicContractResolver(),
+                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
+                });
+        }
 	#endregion
 
 	#region Loadouts
@@ -449,6 +505,191 @@ namespace Oxide.Plugins
 						]
 					},
 				{
+					""_comment"": ""-  -BUTTON - HEAVY, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Class_Select_Button_Heavy"",
+					""parent"": ""Overlay_Class_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.class 4"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.45 0.45"",
+							""anchormax"": ""0.55 0.55""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - HEAVY, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Class_Select_Button_Heavy"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Heavy"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - ENGINEER, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Class_Select_Button_Engineer"",
+					""parent"": ""Overlay_Class_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.class 5"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.56 0.45"",
+							""anchormax"": ""0.66 0.55""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - ENGINEER, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Class_Select_Button_Engineer"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Engineer"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - MEDIC, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Class_Select_Button_Medic"",
+					""parent"": ""Overlay_Class_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.class 6"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.67 0.45"",
+							""anchormax"": ""0.77 0.55""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - MEDIC, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Class_Select_Button_Medic"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Medic"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - SNIPER, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Class_Select_Button_Sniper"",
+					""parent"": ""Overlay_Class_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.class 7"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.78 0.45"",
+							""anchormax"": ""0.88 0.55""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - SNIPER, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Class_Select_Button_Sniper"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Sniper"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - SPY, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Class_Select_Button_Spy"",
+					""parent"": ""Overlay_Class_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.class 8"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.89 0.45"",
+							""anchormax"": ""0.99 0.55""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - SPY, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Class_Select_Button_Spy"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Spy"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
 					""_comment"": ""-  -BUTTON - CANCEL, MIDDLE-BOTTOM-  -"",
 					""name"": ""Overlay_Class_Select_Button_Close"",
 					""parent"": ""Overlay_Class_Select"",
@@ -493,7 +734,148 @@ namespace Oxide.Plugins
 		#region Function_Events
 			void Loaded()	
 			{
-				
+				PrintToConsole( "." );
+				PrintToConsole( "." );
+				PrintToConsole( "." );
+
+				// Refer to item config, attempting to change the number of bullets loaded into weapons
+				var gameObjectArray = FileSystem.LoadAll<GameObject>( "Assets/", "" );
+				var items = gameObjectArray.Select( x => x.GetComponent<ItemDefinition>() ).Where( x => x != null ).ToList();
+				foreach ( var item in gameObjectArray )
+				{
+					if ( item == null ) continue;
+
+					#region oldtestcode
+						// var ammo = item.GetComponent<ItemModProjectile>();
+						// if ( ammo )
+						// {
+							// var projectile = ammo.projectileObject.Get().GetComponent<Projectile>();
+							// if ( projectile != null )
+							// {
+								// PrintToChat( item.displayName.english );
+								// var mod = ToJsonObject( projectile );
+								// foreach ( var key in mod )
+								// {
+									// PrintToChat( key.ToString() );
+								// }
+							// }
+						// }
+						if (
+							// ( !item.name.ToLower().Contains( "ui." ) ) &&
+							// ( !item.name.ToLower().Contains( "screen" ) ) &&
+							// ( !item.name.ToLower().Contains( "effect" ) ) &&
+							// ( !item.name.ToLower().Contains( ".fx" ) ) &&
+							// ( !item.name.ToLower().Contains( "sound" ) ) &&
+							// ( !item.name.ToLower().Contains( "lootpanel" ) ) &&
+							( item.name == "rocket_launcher.entity" )
+						)
+						{
+							var weaponcomponents = item.GetComponents( typeof(Component) );
+							foreach ( var component in weaponcomponents )
+							{
+								string comptype = component.GetType().ToString();
+								// if (
+									// // .item types
+									// ( comptype != "ItemDefinition" ) &&
+									// ( comptype != "ItemBlueprint" ) && // Blueprints
+									// ( comptype != "ItemModEntity" ) && // Traps, Explosives, Deployables, Machete (???)
+									// ( comptype != "ItemModProjectile" ) && // Ammo
+									// ( comptype != "ItemModProjectileRadialDamage" ) && // Explosive 5.56 Rifle Ammo
+									// ( comptype != "ItemModProjectileSpawn" ) && // Special Ammo Types (incendiary,explosive)
+									// ( comptype != "ItemModConsumable" ) && // Food, Drink, Health Items
+									// ( comptype != "ItemModConsume" ) && // Food, Drink, Health Items
+									// ( comptype != "ItemModConsumeContents" ) && // Small Water Bottle only
+									// ( comptype != "ItemModDeployable" ) && // Traps, signs, sleeping bags, tables, etc
+									// ( comptype != "ItemModCookable" ) && // Food, Metals, Oils/Fuels
+									// ( comptype != "ItemModBurnable" ) && // Door Key, Wood
+									// ( comptype != "ItemModWearable" ) && // Clothes
+									// ( comptype != "ItemModSwap" ) && // Human Skull, Wolf Skull
+									// ( comptype != "ItemModMenuOption" ) && // Items with menu options (upgrade,reveal,eat,drink,crush,use,etc)
+									// ( comptype != "ItemModContainer" ) && // Candle Hat, Miners Hat, Small Water Bottle
+									// ( comptype != "ItemModContainerRestriction" ) && // Paper Map only
+									// ( comptype != "ItemModUpgrade" ) && // Blueprint resources before library (Fragment, Page, Book)
+									// ( comptype != "ItemModReveal" ) && // Blueprint resources (Fragment, Page, Book, Library)
+									// // Other types
+									// ( comptype != "UnityEngine.Transform" ) &&
+									// ( comptype != "UnityEngine.BoxCollider" ) &&
+									// ( comptype != "UnityEngine.AudioLowPassFilter" ) &&
+									// ( comptype != "UnityEngine.RigidBody" ) &&
+									// ( comptype != "LootContainer" ) &&
+									// ( comptype != "Spawnable" ) &&
+									// ( comptype != "DecorAlign" ) &&
+									// ( comptype != "DecorRotate" ) &&
+									// ( comptype != "DecorScale" ) &&
+									// ( comptype != "Wearable" ) &&
+									// ( comptype != "TreeEntity" ) &&
+									// ( comptype != "Ragdoll" ) &&
+									// ( comptype != "RagdollInteritable" ) &&
+									// ( comptype != "WorldModel" ) &&
+									// ( comptype != "ScreenBounce" ) &&
+									// ( comptype != "ScreenFov" ) &&
+									// ( comptype != "ScreenRotate" ) &&
+									// ( comptype != "FirstPersonEffect" ) &&
+									// ( comptype != "EffectRecycle" ) &&
+									// ( comptype != "EffectAudioPerspectiveSwitcher" ) &&
+									// ( comptype != "EffectParentToWeaponBone" ) &&
+									// ( comptype != "EffectMuzzleFlash" ) && ///////////////////////////////
+									// ( comptype != "UnparentOnDestroy" ) &&
+									// ( comptype != "FootstepSound" ) &&
+									// ( comptype != "MaxSpawnDistance" ) &&
+									// ( comptype != "FakePhysics" ) &&
+									// ( comptype != "Water" ) &&
+									// ( comptype != "Firebomb" ) &&
+									// ( comptype != "ColliderInfo" ) &&
+									// ( comptype != "BaseMelee" ) && ////////////////////////////////////////
+									// ( comptype != "EntityFlag_Toggle" ) &&
+									// ( comptype != "TorchWeapon" ) &&
+									// ( comptype != "Model" ) &&
+									// ( comptype == "BaseProjectile" ) && /////////////////////////////////////// yessssssssssssssssssssssssssssssssssssssssssssssssssss
+									// ( comptype != "MaxSpawnDistance" )
+								// )
+								{
+									PrintToConsole( "-" );
+									PrintToConsole( item.name );
+									PrintToConsole( item.GetType().ToString() );
+									PrintToConsole( "-" );
+									//PrintToConsole( item.displayName.english );
+									PrintToConsole( comptype );
+									if ( comptype == "BaseProjectile" )
+									{
+										var mod = ToJsonObject( component );
+										PrintToConsole( "---------------" );
+										foreach ( var key in mod )
+										{
+											PrintToConsole( key.ToString() );
+										}
+									}
+								}
+							}
+						}
+
+						// var weapon = item.GetComponent<ItemModEntity>();
+						// if ( weapon )
+						// {
+							// //PrintToChat( item.displayName.english );
+							// if ( item.displayName.english == "Machete" )
+							// {
+								// var weaponcomponents = weapon.entityPrefab.Get().GetComponents( typeof(Component) );
+								// foreach ( var component in weaponcomponents )
+								// {
+									// //PrintToChat( component.GetType().ToString() );
+								// }
+								// // if ( weaponent != null )
+								// // {
+									// // PrintToChat( item.displayName.english );
+									// // var mod = ToJsonObject( weaponent );
+									// // foreach ( var key in mod )
+									// // {
+										// // PrintToChat( key.ToString() );
+									// // }
+								// // }
+							// }
+						// }
+					#endregion
+				}
 			}
 
 			void OnTick()
@@ -593,6 +975,11 @@ namespace Oxide.Plugins
 				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Soldier" );
 				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Pyro" );
 				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Demoman" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Heavy" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Engineer" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Medic" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Sniper" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Spy" );
 				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select_Button_Close" );
 			}
 		#endregion
