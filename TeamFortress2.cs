@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 
 using UnityEngine;
 using Rust;
@@ -42,55 +43,57 @@ namespace Oxide.Plugins
 	#endregion
 
 	#region Variables
-        class DynamicContractResolver : DefaultContractResolver
-        {
-            private static bool IsAllowed(JsonProperty property)
-            {
-                return property.PropertyType.IsPrimitive || property.PropertyType == typeof(List<ItemAmount>) ||
-                             property.PropertyType == typeof(ItemAmount[]) ||
-                             property.PropertyType == typeof(List<DamageTypeEntry>) ||
-                             property.PropertyType == typeof(DamageTypeEntry) ||
-                             property.PropertyType == typeof(DamageType) ||
-                             property.PropertyType == typeof(List<ItemModConsumable.ConsumableEffect>) ||
-                             property.PropertyType == typeof(ItemModProjectileRadialDamage) ||
-                             property.PropertyType == typeof(MetabolismAttribute.Type) ||
-                             property.PropertyType == typeof(Rarity) ||
-                             property.PropertyType == typeof(ItemCategory) ||
-                             property.PropertyType == typeof(ItemDefinition) ||
-                             property.PropertyType == typeof(ItemDefinition.Condition) ||
-                             property.PropertyType == typeof(Wearable) ||
-                             property.PropertyType == typeof(Wearable.OccupationSlots) ||
-                             property.PropertyType == typeof(ResourceDispenser.GatherProperties) ||
-                             property.PropertyType == typeof(ResourceDispenser.GatherPropertyEntry) ||
-                             property.PropertyType == typeof(String);
-            }
+        private Dictionary<ulong, int> Player_Team; // 64bit Steam ID, Team Index
 
-            protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
-            {
-                var properties = base.CreateProperties(type, memberSerialization);
-                return properties.Where(p => (p.DeclaringType == type || p.DeclaringType == typeof(TimedExplosive) || p.DeclaringType == typeof(BaseMelee)) && IsAllowed(p)).ToList();
-            }
-        }
+        // class DynamicContractResolver : DefaultContractResolver
+        // {
+            // private static bool IsAllowed(JsonProperty property)
+            // {
+                // return property.PropertyType.IsPrimitive || property.PropertyType == typeof(List<ItemAmount>) ||
+                             // property.PropertyType == typeof(ItemAmount[]) ||
+                             // property.PropertyType == typeof(List<DamageTypeEntry>) ||
+                             // property.PropertyType == typeof(DamageTypeEntry) ||
+                             // property.PropertyType == typeof(DamageType) ||
+                             // property.PropertyType == typeof(List<ItemModConsumable.ConsumableEffect>) ||
+                             // property.PropertyType == typeof(ItemModProjectileRadialDamage) ||
+                             // property.PropertyType == typeof(MetabolismAttribute.Type) ||
+                             // property.PropertyType == typeof(Rarity) ||
+                             // property.PropertyType == typeof(ItemCategory) ||
+                             // property.PropertyType == typeof(ItemDefinition) ||
+                             // property.PropertyType == typeof(ItemDefinition.Condition) ||
+                             // property.PropertyType == typeof(Wearable) ||
+                             // property.PropertyType == typeof(Wearable.OccupationSlots) ||
+                             // property.PropertyType == typeof(ResourceDispenser.GatherProperties) ||
+                             // property.PropertyType == typeof(ResourceDispenser.GatherPropertyEntry) ||
+                             // property.PropertyType == typeof(String);
+            // }
 
-        private static JSONObject ToJsonObject(object obj)
-        {
-            return JSONObject.Parse(ToJsonString(obj));
-        }
+            // protected override IList<JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization)
+            // {
+                // var properties = base.CreateProperties(type, memberSerialization);
+                // return properties.Where(p => (p.DeclaringType == type || p.DeclaringType == typeof(TimedExplosive) || p.DeclaringType == typeof(BaseMelee)) && IsAllowed(p)).ToList();
+            // }
+        // }
 
-        private static JSONArray ToJsonArray(object obj)
-        {
-            return JSONArray.Parse(ToJsonString(obj));
-        }
+        // private static JSONObject ToJsonObject(object obj)
+        // {
+            // return JSONObject.Parse(ToJsonString(obj));
+        // }
 
-        private static string ToJsonString(object obj)
-        {
-            return JsonConvert.SerializeObject(obj, new JsonSerializerSettings
-                {
-                    ContractResolver = new DynamicContractResolver(),
-                    ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
-                    Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
-                });
-        }
+        // private static JSONArray ToJsonArray(object obj)
+        // {
+            // return JSONArray.Parse(ToJsonString(obj));
+        // }
+
+        // private static string ToJsonString(object obj)
+        // {
+            // return JsonConvert.SerializeObject(obj, new JsonSerializerSettings
+                // {
+                    // ContractResolver = new DynamicContractResolver(),
+                    // ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                    // Converters = new List<JsonConverter> { new Newtonsoft.Json.Converters.StringEnumConverter() }
+                // });
+        // }
 	#endregion
 
 	#region Loadouts
@@ -317,6 +320,194 @@ namespace Oxide.Plugins
 
 	#region UI_JSON
 		#region UI_Class_Select_JSON
+			public string ui_team_select = @"[  
+				{
+					""_comment"": ""-  -OVERLAY - WINDOW, ALL-  -"",
+					""name"": ""Overlay_Team_Select"",
+					""parent"": ""Overlay"",
+					""components"":
+					[
+						{
+							 ""type"":""UnityEngine.UI.Image"",
+							 ""color"":""0.1 0.1 0.1 0.8"",
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0 0"",
+							""anchormax"": ""1 1""
+						},
+						{
+							""type"":""NeedsCursor"",
+						}
+					]
+				},
+				{
+					""_comment"": ""-  -TEXT - TITLE, MIDDLE-TOP-  -"",
+					""parent"": ""Overlay_Team_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Text"",
+							""text"":""Select a Team!"",
+							""fontSize"":30,
+							""align"": ""MiddleCenter"",
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.3 0.9"",
+							""anchormax"": ""0.7 1.0""
+						}
+					]
+				},
+				{
+					""_comment"": ""-  -BUTTON - RANDOM, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Team_Select_Button_Random"",
+					""parent"": ""Overlay_Team_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.team 3"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.04 0.25"",
+							""anchormax"": ""0.24 0.75""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - RANDOM, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Team_Select_Button_Random"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Random"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - SPECTATE, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Team_Select_Button_Spectate"",
+					""parent"": ""Overlay_Team_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.team 2"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.28 0.25"",
+							""anchormax"": ""0.48 0.75""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - SPECTATE, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Team_Select_Button_Spectate"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""Spectate"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - BLU, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Team_Select_Button_BLU"",
+					""parent"": ""Overlay_Team_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.team 1"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.52 0.25"",
+							""anchormax"": ""0.72 0.75""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - BLU, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Team_Select_Button_BLU"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""BLU"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					},
+				{
+					""_comment"": ""-  -BUTTON - RED, LEFT-MIDDLE-  -"",
+					""name"": ""Overlay_Team_Select_Button_RED"",
+					""parent"": ""Overlay_Team_Select"",
+					""components"":
+					[
+						{
+							""type"":""UnityEngine.UI.Button"",
+							""color"": ""0.5 0.5 0.5 0.2"",
+							""command"":""tf2.team 0"",
+							""imagetype"": ""Tiled""
+						},
+						{
+							""type"":""RectTransform"",
+							""anchormin"": ""0.76 0.25"",
+							""anchormax"": ""0.96 0.75""
+						}
+					]
+				},
+					{
+						""_comment"": ""-  -TEXT - RED, LEFT-MIDDLE-  -"",
+						""parent"": ""Overlay_Team_Select_Button_RED"",
+						""components"":
+						[
+							{
+								""type"":""UnityEngine.UI.Text"",
+								""text"":""RED"",
+								""fontSize"":24,
+								""align"": ""MiddleCenter"",
+							},
+							{
+								""type"":""RectTransform"",
+								""anchormin"": ""0.0 0.0"",
+								""anchormax"": ""1.0 1.0""
+							}
+						]
+					}
+			]";
 			public string ui_class_select = @"[  
 				{
 					""_comment"": ""-  -OVERLAY - WINDOW, ALL-  -"",
@@ -739,153 +930,189 @@ namespace Oxide.Plugins
 				PrintToConsole( "." );
 
 				// Refer to item config, attempting to change the number of bullets loaded into weapons
-				var gameObjectArray = FileSystem.LoadAll<GameObject>( "Assets/", "" );
+				var gameObjectArray = FileSystem.LoadAll<GameObject>( "Assets/", ".entity" ); // .entity for weapons, .item for other items
 				var items = gameObjectArray.Select( x => x.GetComponent<ItemDefinition>() ).Where( x => x != null ).ToList();
 				foreach ( var item in gameObjectArray )
 				{
 					if ( item == null ) continue;
 
 					#region oldtestcode
-						// var ammo = item.GetComponent<ItemModProjectile>();
-						// if ( ammo )
-						// {
-							// var projectile = ammo.projectileObject.Get().GetComponent<Projectile>();
-							// if ( projectile != null )
-							// {
-								// PrintToChat( item.displayName.english );
-								// var mod = ToJsonObject( projectile );
-								// foreach ( var key in mod )
-								// {
-									// PrintToChat( key.ToString() );
-								// }
-							// }
-						// }
-						if (
-							// ( !item.name.ToLower().Contains( "ui." ) ) &&
-							// ( !item.name.ToLower().Contains( "screen" ) ) &&
-							// ( !item.name.ToLower().Contains( "effect" ) ) &&
-							// ( !item.name.ToLower().Contains( ".fx" ) ) &&
-							// ( !item.name.ToLower().Contains( "sound" ) ) &&
-							// ( !item.name.ToLower().Contains( "lootpanel" ) ) &&
-							( item.name == "rocket_launcher.entity" )
-						)
-						{
-							var weaponcomponents = item.GetComponents( typeof(Component) );
-							foreach ( var component in weaponcomponents )
-							{
-								string comptype = component.GetType().ToString();
-								// if (
-									// // .item types
-									// ( comptype != "ItemDefinition" ) &&
-									// ( comptype != "ItemBlueprint" ) && // Blueprints
-									// ( comptype != "ItemModEntity" ) && // Traps, Explosives, Deployables, Machete (???)
-									// ( comptype != "ItemModProjectile" ) && // Ammo
-									// ( comptype != "ItemModProjectileRadialDamage" ) && // Explosive 5.56 Rifle Ammo
-									// ( comptype != "ItemModProjectileSpawn" ) && // Special Ammo Types (incendiary,explosive)
-									// ( comptype != "ItemModConsumable" ) && // Food, Drink, Health Items
-									// ( comptype != "ItemModConsume" ) && // Food, Drink, Health Items
-									// ( comptype != "ItemModConsumeContents" ) && // Small Water Bottle only
-									// ( comptype != "ItemModDeployable" ) && // Traps, signs, sleeping bags, tables, etc
-									// ( comptype != "ItemModCookable" ) && // Food, Metals, Oils/Fuels
-									// ( comptype != "ItemModBurnable" ) && // Door Key, Wood
-									// ( comptype != "ItemModWearable" ) && // Clothes
-									// ( comptype != "ItemModSwap" ) && // Human Skull, Wolf Skull
-									// ( comptype != "ItemModMenuOption" ) && // Items with menu options (upgrade,reveal,eat,drink,crush,use,etc)
-									// ( comptype != "ItemModContainer" ) && // Candle Hat, Miners Hat, Small Water Bottle
-									// ( comptype != "ItemModContainerRestriction" ) && // Paper Map only
-									// ( comptype != "ItemModUpgrade" ) && // Blueprint resources before library (Fragment, Page, Book)
-									// ( comptype != "ItemModReveal" ) && // Blueprint resources (Fragment, Page, Book, Library)
-									// // Other types
-									// ( comptype != "UnityEngine.Transform" ) &&
-									// ( comptype != "UnityEngine.BoxCollider" ) &&
-									// ( comptype != "UnityEngine.AudioLowPassFilter" ) &&
-									// ( comptype != "UnityEngine.RigidBody" ) &&
-									// ( comptype != "LootContainer" ) &&
-									// ( comptype != "Spawnable" ) &&
-									// ( comptype != "DecorAlign" ) &&
-									// ( comptype != "DecorRotate" ) &&
-									// ( comptype != "DecorScale" ) &&
-									// ( comptype != "Wearable" ) &&
-									// ( comptype != "TreeEntity" ) &&
-									// ( comptype != "Ragdoll" ) &&
-									// ( comptype != "RagdollInteritable" ) &&
-									// ( comptype != "WorldModel" ) &&
-									// ( comptype != "ScreenBounce" ) &&
-									// ( comptype != "ScreenFov" ) &&
-									// ( comptype != "ScreenRotate" ) &&
-									// ( comptype != "FirstPersonEffect" ) &&
-									// ( comptype != "EffectRecycle" ) &&
-									// ( comptype != "EffectAudioPerspectiveSwitcher" ) &&
-									// ( comptype != "EffectParentToWeaponBone" ) &&
-									// ( comptype != "EffectMuzzleFlash" ) && ///////////////////////////////
-									// ( comptype != "UnparentOnDestroy" ) &&
-									// ( comptype != "FootstepSound" ) &&
-									// ( comptype != "MaxSpawnDistance" ) &&
-									// ( comptype != "FakePhysics" ) &&
-									// ( comptype != "Water" ) &&
-									// ( comptype != "Firebomb" ) &&
-									// ( comptype != "ColliderInfo" ) &&
-									// ( comptype != "BaseMelee" ) && ////////////////////////////////////////
-									// ( comptype != "EntityFlag_Toggle" ) &&
-									// ( comptype != "TorchWeapon" ) &&
-									// ( comptype != "Model" ) &&
-									// ( comptype == "BaseProjectile" ) && /////////////////////////////////////// yessssssssssssssssssssssssssssssssssssssssssssssssssss
-									// ( comptype != "MaxSpawnDistance" )
-								// )
-								{
-									PrintToConsole( "-" );
-									PrintToConsole( item.name );
-									PrintToConsole( item.GetType().ToString() );
-									PrintToConsole( "-" );
-									//PrintToConsole( item.displayName.english );
-									PrintToConsole( comptype );
-									if ( comptype == "BaseProjectile" )
-									{
-										var mod = ToJsonObject( component );
-										PrintToConsole( "---------------" );
-										foreach ( var key in mod )
-										{
-											PrintToConsole( key.ToString() );
-										}
-									}
-								}
-							}
-						}
-
-						// var weapon = item.GetComponent<ItemModEntity>();
-						// if ( weapon )
-						// {
-							// //PrintToChat( item.displayName.english );
-							// if ( item.displayName.english == "Machete" )
-							// {
-								// var weaponcomponents = weapon.entityPrefab.Get().GetComponents( typeof(Component) );
-								// foreach ( var component in weaponcomponents )
-								// {
-									// //PrintToChat( component.GetType().ToString() );
-								// }
-								// // if ( weaponent != null )
+						// // var ammo = item.GetComponent<ItemModProjectile>();
+						// // if ( ammo )
+						// // {
+							// // var projectile = ammo.projectileObject.Get().GetComponent<Projectile>();
+							// // if ( projectile != null )
+							// // {
+								// // PrintToChat( item.displayName.english );
+								// // var mod = ToJsonObject( projectile );
+								// // foreach ( var key in mod )
 								// // {
-									// // PrintToChat( item.displayName.english );
-									// // var mod = ToJsonObject( weaponent );
-									// // foreach ( var key in mod )
-									// // {
-										// // PrintToChat( key.ToString() );
-									// // }
+									// // PrintToChat( key.ToString() );
 								// // }
+							// // }
+						// // }
+						// if (
+							// // ( !item.name.ToLower().Contains( "ui." ) ) &&
+							// // ( !item.name.ToLower().Contains( "screen" ) ) &&
+							// // ( !item.name.ToLower().Contains( "effect" ) ) &&
+							// // ( !item.name.ToLower().Contains( ".fx" ) ) &&
+							// // ( !item.name.ToLower().Contains( "sound" ) ) &&
+							// // ( !item.name.ToLower().Contains( "lootpanel" ) ) &&
+							// //( item.name == "thompson.entity" ) ||
+							// //( item.name == "rocket_launcher.entity" ) ||
+							// //( item.name == "machete.entity" ) ||
+							// ( item.name.Contains( "shotgun" ) )
+						// )
+						// {
+							// PrintToConsole( "-" );
+							// PrintToConsole( item.name );
+							// PrintToConsole( item.GetType().ToString() );
+							// PrintToConsole( "-" );
+							// var weaponcomponents = item.GetComponents( typeof(Component) );
+							// foreach ( var component in weaponcomponents )
+							// {
+								// string comptype = component.GetType().ToString();
+								// // if (
+									// // // .item types
+									// // ( comptype != "ItemDefinition" ) &&
+									// // ( comptype != "ItemBlueprint" ) && // Blueprints
+									// // ( comptype != "ItemModEntity" ) && // Traps, Explosives, Deployables, Machete (???)
+									// // ( comptype != "ItemModProjectile" ) && // Ammo
+									// // ( comptype != "ItemModProjectileRadialDamage" ) && // Explosive 5.56 Rifle Ammo
+									// // ( comptype != "ItemModProjectileSpawn" ) && // Special Ammo Types (incendiary,explosive)
+									// // ( comptype != "ItemModConsumable" ) && // Food, Drink, Health Items
+									// // ( comptype != "ItemModConsume" ) && // Food, Drink, Health Items
+									// // ( comptype != "ItemModConsumeContents" ) && // Small Water Bottle only
+									// // ( comptype != "ItemModDeployable" ) && // Traps, signs, sleeping bags, tables, etc
+									// // ( comptype != "ItemModCookable" ) && // Food, Metals, Oils/Fuels
+									// // ( comptype != "ItemModBurnable" ) && // Door Key, Wood
+									// // ( comptype != "ItemModWearable" ) && // Clothes
+									// // ( comptype != "ItemModSwap" ) && // Human Skull, Wolf Skull
+									// // ( comptype != "ItemModMenuOption" ) && // Items with menu options (upgrade,reveal,eat,drink,crush,use,etc)
+									// // ( comptype != "ItemModContainer" ) && // Candle Hat, Miners Hat, Small Water Bottle
+									// // ( comptype != "ItemModContainerRestriction" ) && // Paper Map only
+									// // ( comptype != "ItemModUpgrade" ) && // Blueprint resources before library (Fragment, Page, Book)
+									// // ( comptype != "ItemModReveal" ) && // Blueprint resources (Fragment, Page, Book, Library)
+									// // // Other types
+									// // ( comptype != "UnityEngine.Transform" ) &&
+									// // ( comptype != "UnityEngine.BoxCollider" ) &&
+									// // ( comptype != "UnityEngine.AudioLowPassFilter" ) &&
+									// // ( comptype != "UnityEngine.RigidBody" ) &&
+									// // ( comptype != "LootContainer" ) &&
+									// // ( comptype != "Spawnable" ) &&
+									// // ( comptype != "DecorAlign" ) &&
+									// // ( comptype != "DecorRotate" ) &&
+									// // ( comptype != "DecorScale" ) &&
+									// // ( comptype != "Wearable" ) &&
+									// // ( comptype != "TreeEntity" ) &&
+									// // ( comptype != "Ragdoll" ) &&
+									// // ( comptype != "RagdollInteritable" ) &&
+									// // ( comptype != "WorldModel" ) &&
+									// // ( comptype != "ScreenBounce" ) &&
+									// // ( comptype != "ScreenFov" ) &&
+									// // ( comptype != "ScreenRotate" ) &&
+									// // ( comptype != "FirstPersonEffect" ) &&
+									// // ( comptype != "EffectRecycle" ) &&
+									// // ( comptype != "EffectAudioPerspectiveSwitcher" ) &&
+									// // ( comptype != "EffectParentToWeaponBone" ) &&
+									// // ( comptype != "EffectMuzzleFlash" ) && ///////////////////////////////
+									// // ( comptype != "UnparentOnDestroy" ) &&
+									// // ( comptype != "FootstepSound" ) &&
+									// // ( comptype != "MaxSpawnDistance" ) &&
+									// // ( comptype != "FakePhysics" ) &&
+									// // ( comptype != "Water" ) &&
+									// // ( comptype != "Firebomb" ) &&
+									// // ( comptype != "ColliderInfo" ) &&
+									// // ( comptype != "BaseMelee" ) && ////////////////////////////////////////
+									// // ( comptype != "EntityFlag_Toggle" ) &&
+									// // ( comptype != "TorchWeapon" ) &&
+									// // ( comptype != "Model" ) &&
+									// // ( comptype == "BaseProjectile" ) && /////////////////////////////////////// yessssssssssssssssssssssssssssssssssssssssssssssssssss
+									// // ( comptype != "MaxSpawnDistance" )
+								// // )
+								// {
+									// //PrintToConsole( item.displayName.english );
+									// PrintToConsole( comptype );
+									// if ( comptype == "BaseProjectile" ) //|| comptype == "BaseMelee" || comptype == "BaseLauncher" )
+									// {
+										// var mod = ToJsonObject( component );
+										// PrintToConsole( "---------------" );
+										// PrintToConsole( mod.ToString() );
+									// }
+								// }
 							// }
 						// }
+
+						// // var weapon = item.GetComponent<ItemModEntity>();
+						// // if ( weapon )
+						// // {
+							// // //PrintToChat( item.displayName.english );
+							// // if ( item.displayName.english == "Machete" )
+							// // {
+								// // var weaponcomponents = weapon.entityPrefab.Get().GetComponents( typeof(Component) );
+								// // foreach ( var component in weaponcomponents )
+								// // {
+									// // //PrintToChat( component.GetType().ToString() );
+								// // }
+								// // // if ( weaponent != null )
+								// // // {
+									// // // PrintToChat( item.displayName.english );
+									// // // var mod = ToJsonObject( weaponent );
+									// // // foreach ( var key in mod )
+									// // // {
+										// // // PrintToChat( key.ToString() );
+									// // // }
+								// // // }
+							// // }
+						// // }
 					#endregion
 				}
 			}
 
-			void OnTick()
-			{
-				// Close the UI if the user exits it with a button press
-				// if ( input.IsDown( BUTTON.INVENTORY ) )
+			// void OnServerInitialized()
+			// {
+				// Player_Team = new Dictionary<ulong, int>();
+			// }
+
+			// void OnPlayerConnected( BasePlayer player )
+			// {
+				// // Assign to spectator first
+				// Player_Team[player.userID] = 2;
+
+				// // The bring up the team choice UI
+				// //UI_Team_Select( player );
+			// }
+
+			// void OnEntityTakeDamage( BaseCombatEntity entity, HitInfo info )
+			// {
+				// // Both entities are players
+				// if ( ( entity is BasePlayer ) && ( info.Initiator is BasePlayer ) )
 				// {
-					// CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select" );
+					// BasePlayer victim = entity as BasePlayer;
+					// BasePlayer attacker = info.Initiator as BasePlayer;
+
+					// // One of the players is spectating, or they are on the same team; negate damage
+					// if (
+						// ( Player_Team[victim.userID] == 2 ) ||
+						// ( Player_Team[attacker.userID] == 2 ) ||
+						// ( Player_Team[victim.userID] == Player_Team[attacker.userID] )
+					// )
+					// {
+						// info.damageTypes.ScaleAll( 0 );
+						// return;
+					// }
 				// }
-			}
+				// return;
+			// }
+
+			// void OnTick()
+			// {
+				// // Close the UI if the user exits it with a button press
+				// // if ( input.IsDown( BUTTON.INVENTORY ) )
+				// // {
+					// // CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Class_Select" );
+				// // }
+			// }
 
 			void OnPlayerRespawned( BasePlayer player )
 			{
@@ -895,6 +1122,31 @@ namespace Oxide.Plugins
 			void OnPlayerSleepEnded( BasePlayer player )
 			{
 				Class_Select( player, 0 );
+			}
+		#endregion
+
+		#region Function_Team
+			void Team_Select( BasePlayer player, int team )
+			{
+				if ( ( team < 0 ) || ( team >= 4 ) ) return;
+
+			}
+
+			void UI_Team_Select( BasePlayer player )
+			{
+				// Send the formatted JSON UI to the server
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "AddUI", ui_team_select );
+			}
+
+			void UI_Team_Select_Close( BasePlayer player )
+			{
+				// Close the menu
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Team_Select" );
+				// Must also close the button text seperately because they are parented to the buttons (?)
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Team_Select_Button_Random" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Team_Select_Button_Spectate" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Team_Select_Button_BLU" );
+				CommunityEntity.ServerInstance.ClientRPCEx( new Network.SendInfo() { connection = player.net.connection }, null, "DestroyUI", "Overlay_Team_Select_Button_RED" );
 			}
 		#endregion
 
@@ -917,14 +1169,21 @@ namespace Oxide.Plugins
 							string itemname = Loadout[loadout, itemnum];
 								if ( itemname == LOADOUT_ITEM_SHIRT )
 								{
-									// Change shirt to be team coloured
-									if ( UnityEngine.Random.Range( 1, 2 ) == 1 )
+									if ( Player_Team.ContainsKey( player.userID ) )
 									{
-										itemname = "hoodie";
+										// Change shirt to be team coloured
+										if ( Player_Team[player.userID] == 1 )
+										{
+											itemname = "hoodie";
+										}
+										else
+										{
+											itemname = "tshirt.long";
+										}
 									}
 									else
 									{
-										itemname = "tshirt.long";
+										continue;
 									}
 								}
 							var item = ItemManager.FindItemDefinition( itemname );
@@ -958,6 +1217,25 @@ namespace Oxide.Plugins
 				player.inventory.containerWear.SetFlag( ItemContainer.Flag.IsLocked, true );
 				player.inventory.containerBelt.SetFlag( ItemContainer.Flag.IsLocked, true );
 				player.inventory.containerMain.SetFlag( ItemContainer.Flag.IsLocked, true );
+
+				// var json = ToJsonObject( player.inventory.containerBelt.GetSlot( 0 ).GetHeldEntity().gameObject );
+				// PrintToConsole( "--------------------------------" );
+				// PrintToConsole( "--------------------------------" );
+				// PrintToConsole( json.ToString() );
+				// PrintToConsole( "--------------------------------" );
+				// PrintToConsole( "--------------------------------" );
+
+				// // get all public static methods of MyClass type
+				// MethodInfo[] methodInfos = player.GetType().GetMethods(); //player.inventory.containerBelt.GetSlot( 0 ).GetType().GetMethods();
+				// PrintToConsole( player.inventory.containerBelt.GetType().ToString() );
+				// foreach ( MethodInfo info in methodInfos )
+				// {
+					// PrintToConsole( info.Name );
+				// }
+
+				// var worldent = player.inventory.containerBelt.GetSlot( 0 ).GetHeldEntity() as BaseProjectile;
+				// worldent.projectileAmount = 100;
+				// worldent.reloadTime = 0.1f;
 			}
 
 			void UI_Class_Select( BasePlayer player )
@@ -986,6 +1264,37 @@ namespace Oxide.Plugins
 	#endregion
 
 	#region ConsoleCommands
+		[ConsoleCommand( "tf2.team_close" )]
+		void Plugin_Command_Team_Select_Close( ConsoleSystem.Arg arg )
+		{
+			// Ensure there was a player sending the command
+            if ( arg.connection == null ) return;
+
+			// Close the menu
+            BasePlayer player = arg.connection.player as BasePlayer;
+			UI_Team_Select_Close( player );
+		}
+
+		[ConsoleCommand( "tf2.team" )]
+		void Plugin_Command_Team_Select( ConsoleSystem.Arg arg )
+		{
+			// Ensure the class arguement is present, and there was a player sending the command
+            if ( ( arg.Args == null ) || ( arg.Args.Length < 1 ) ) return;
+            if ( arg.connection == null ) return;
+
+            BasePlayer player = arg.connection.player as BasePlayer;
+
+			// Select the new team
+			int teamselect = 0;
+			if ( int.TryParse( arg.Args[0], out teamselect ) )
+			{
+				Team_Select( player, teamselect );
+			}
+
+			// Close the menu
+			UI_Team_Select_Close( player );
+		}
+
 		[ConsoleCommand( "tf2.class_close" )]
 		void Plugin_Command_Class_Select_Close( ConsoleSystem.Arg arg )
 		{
@@ -1023,8 +1332,34 @@ namespace Oxide.Plugins
 		[ChatCommand( "tf2" )]
 		void Plugin_Chat_DisplayHelp( BasePlayer player, string cmd, string[] args )
 		{
+			//var json = ToJsonObject( player.inventory.containerBelt.GetSlot( 0 ).GetHeldEntity() );
+			// ( player.GetActiveItem().GetHeldEntity() as BaseProjectile ).projectileVelocityScale = 0.01f;
+			// player.GetActiveItem().condition = 50;
+			// var json = ToJsonObject( player.GetActiveItem().GetHeldEntity() as BaseEntity );
+			// PrintToConsole( "--------------------------------" );
+			// PrintToConsole( "--------------------------------" );
+			// PrintToConsole( json.ToString() );
+			// PrintToConsole( "--------------------------------" );
+			// PrintToConsole( "--------------------------------" );
+
 			PrintToChat( "Test" );
-			Class_Select( player, 0 );
+		}
+
+		// Displays the team loadout screen
+		[ChatCommand( "team" )]
+		void Plugin_Chat_DisplayTeamSelect( BasePlayer player, string cmd, string[] args )
+		{
+			// if ( args.Length > 0 )
+			// {
+				// // Skip the menu and immediately change
+				// int classselect = 0;
+				// if ( int.TryParse( args[0], out classselect ) )
+				// {
+					// Class_Select( player, classselect );
+					// return;
+				// }
+			// }
+			UI_Team_Select( player );
 		}
 
 		// Displays the class loadout screen
